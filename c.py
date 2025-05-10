@@ -1,17 +1,17 @@
 # developed with python-3.13.3-embed-amd64
 # -*- coding: utf-8 -*-
-# mini Python Compiler v0.1.0
+# mini Python Compiler v0.1.1
 # License: Apache-2.0
 # Copyright (c) 2025 Dinnerb0ne<tomma_2022@outlook.com>
 
 """
-mini Python Compiler/Interpreter with PYC generation
+Enhanced Python Compiler/Interpreter with PYC support
 Features:
-+ Execute scripts directly (python compiler.py script.py)
-+ Compile to PYC files (-c flag)
++ Execute .py scripts directly
++ Compile to .pyc files (-c flag)
++ Run .pyc files directly (-r flag)
 + Optimized code structure
 + Memory efficient operation
-+ Enhanced error handling
 """
 
 import ast
@@ -19,12 +19,15 @@ import sys
 import os
 import marshal
 import types
+import importlib.util
 from typing import Dict, Optional, Tuple
 
 class PythonCompiler:
-    """Core compiler implementation with PYC generation support"""
-
-    PYTHON_MAGIC = b'\x03\xf3\r\n'  # Magic number for Python 3.13.3
+    # Core compiler implementation with PYC support
+    
+    # Magic number for Python 3.13 (example)
+    PYTHON_MAGIC = importlib.util.MAGIC_NUMBER
+    
     def __init__(self):
         self.optimizations = {
             'constant_folding': True,
@@ -33,7 +36,7 @@ class PythonCompiler:
         self._code_cache: Dict[Tuple[str, int], types.CodeType] = {}
 
     def compile_source(self, source: str, filename: str = "<string>") -> types.CodeType:
-        """Compile Python source to bytecode with optimizations"""
+        # Compile Python source to bytecode
         cache_key = (filename, hash(source))
         if cache_key in self._code_cache:
             return self._code_cache[cache_key]
@@ -56,7 +59,7 @@ class PythonCompiler:
             raise CompilerError(f"Compilation failed: {str(e)}")
 
     def _optimize_ast(self, node: ast.AST) -> ast.AST:
-        """Apply AST-level optimizations"""
+        # Apply AST-level optimizations
         class Optimizer(ast.NodeTransformer):
             def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
                 if (isinstance(node.left, ast.Constant)) and isinstance(node.right, ast.Constant):
@@ -75,129 +78,138 @@ class PythonCompiler:
         return Optimizer().visit(node)
 
     def _peephole_optimize(self, code: types.CodeType) -> types.CodeType:
-        """Basic bytecode optimizations"""
-        return code  # Actual implementation would modify code.co_code
-    
-    def _get_python_tag(self) -> str:
-        """Get Python implementation and version tag (e.g., cpython-313)"""
-        impl = sys.implementation.name  # e.g., 'cpython'
-        ver = "mini python 0.1.0"  # e.g., (3, 13, ...)
-        return f"{impl}-{ver}"
+        # Basic bytecode optimization
+        return code
 
-    def generate_pyc(self, code: types.CodeType, source_path: str, output_dir: str = None) -> str:
-        """
-        Generate standard .pyc file with original filename
-        Args:
-            code: Compiled code object
-            source_path: Path to source file
-            output_dir: Optional output directory (defaults to __pycache__)
-        Returns:
-            Path to generated .pyc file
-        """
-        # Get source file info
-        source_name = os.path.basename(source_path)
-        base_name = os.path.splitext(source_name)[0]  # Remove .py extension
-        source_mtime = int(os.path.getmtime(source_path))
-        source_size = os.path.getsize(source_path) & 0xFFFFFFFF
+    def load_pyc(self, pyc_path: str) -> types.CodeType:
+        # Load compiled code from .pyc file
+        try:
+            with open(pyc_path, 'rb') as f:
+                # Read and validate header
+                magic = f.read(4)
+                if magic != self.PYTHON_MAGIC:
+                    raise CompilerError("Invalid magic number in .pyc file")
+                
+                # Skip timestamp and size (8 bytes)
+                f.read(8)
+                
+                # Load marshaled code
+                return marshal.load(f)
+        except Exception as e:
+            raise CompilerError(f"Failed to load .pyc file: {str(e)}")
+
+    def generate_pyc(self, code: types.CodeType, source_path: str) -> str:
+
+        #Generate standard .pyc file
         
-        # Determine output directory
-        if output_dir is None:
-            base_dir = os.path.dirname(source_path)
-            output_dir = os.path.join(base_dir, "__pycache__")
-            os.makedirs(output_dir, exist_ok=True)
+        cache_dir = os.path.join(os.path.dirname(source_path), "__pycache__")
+        os.makedirs(cache_dir, exist_ok=True)
         
-        # Generate standard PYC filename (e.g., script.cpython-313.pyc)
+        base_name = os.path.splitext(os.path.basename(source_path))[0]
         pyc_name = f"{base_name}.{self._get_python_tag()}.pyc"
-        output_path = os.path.join(output_dir, pyc_name)
+        pyc_path = os.path.join(cache_dir, pyc_name)
         
-        # Write PYC file
-        with open(output_path, 'wb') as f:
-            # Header (16 bytes)
-            f.write(self.PYTHON_MAGIC)  # Magic number
-            f.write(source_mtime.to_bytes(4, 'little'))  # Timestamp
-            f.write(source_size.to_bytes(4, 'little'))  # Source size
+        with open(pyc_path, 'wb') as f:
+            # Write header
+            f.write(self.PYTHON_MAGIC)
+            f.write(int(os.path.getmtime(source_path)).to_bytes(4, 'little'))
+            f.write(os.path.getsize(source_path).to_bytes(4, 'little'))
             f.write(b'\x00' * 4)  # Padding
             
-            # Marshaled code object
+            # Write marshaled code
             marshal.dump(code, f)
         
-        return output_path
+        return pyc_path
+
+    def _get_python_tag(self) -> str:
+        # Get Python implementation/version tag
+        return f"mini-{sys.version_info[0]}{sys.version_info[1]:02d}"
 
     def execute(self, code: types.CodeType, globals: Optional[Dict] = None) -> None:
-        """Execute compiled code with proper context"""
+        # Execute compiled code
         if globals is None:
             globals = {
                 '__name__': '__main__',
                 '__file__': '<string>',
-                '__builtins__': __builtins__
+                '__builtins__': __builtins__,
+                'PythonCompiler': PythonCompiler,  # For self-compilation
+                'CompilerError': CompilerError
             }
         exec(code, globals)
 
 class CompilerError(Exception):
-    """Custom compilation error exception"""
+    # Custom compilation error (todo)
     pass
 
 def main():
-    if len(sys.argv) < 2:
-        print("[info] Usage:")
-        print("[info] |  Execute script: python compiler.py script.py [args...]")
-        print("[info] |  Compile to PYC: python compiler.py -c script.py")
-        sys.exit(1)
-    
-    compile_only = False
-    script_path = sys.argv[1]
-    
-    if script_path == '-c':
-        if len(sys.argv) < 3:
-            print("Error: No input file specified for compilation")
-            sys.exit(1)
-        compile_only = True
-        script_path = sys.argv[2]
 
-    if script_path == '-v':
-        print("mini Python Compiler v0.1.0")
-        print("Copyright (c) 2025 Dinnerb0ne<tomma_2022@outlook.com>")
-        sys.exit(0)
+    mode = 'execute'
+    target = sys.argv[1]
     
-    if not os.path.exists(script_path):
-        print(f"[error] Error: File '{script_path}' not found")
+    match target:
+        case '-c':
+            if len(sys.argv) < 3:
+                print("[Error] Missing input file")
+                sys.exit(1)
+            mode = 'compile'
+            target = sys.argv[2]
+        case '-r':
+            if len(sys.argv) < 3:
+                print("[Error] Missing .pyc file")
+                sys.exit(1)
+            mode = 'run_pyc'
+            target = sys.argv[2]
+        case '-h':
+            if len(sys.argv) < 2:
+                print("[info] Usage:")
+                print("     |Execute script: python c.py script.py [args...]")
+                print("     |Compile to PYC: python c.py -c script.py")
+                print("     |Run PYC file:   python c.py -r script.pyc")
+                sys.exit(1)
+
+        case '-v':
+            print("mini Python Compiler v0.1.1")
+            print("Copyright (c) 2025 Dinnerb0ne<tomma_2022@outlook.com>")
+            sys.exit(0)
+
+    
+    if not os.path.exists(target):
+        print(f"[Error] File '{target}' not found")
         sys.exit(1)
     
-    # Read source code
-    try:
-        with open(script_path, 'r', encoding='utf-8') as f:
-            source = f.read()
-    except IOError as e:
-        print(f"Error reading file: {e}")
-        sys.exit(1)
-    
-    # Set up arguments
-    if compile_only:
-        sys.argv = [sys.argv[0]] + sys.argv[3:]
-    else:
-        sys.argv = sys.argv[1:]
-    
-    # Compile
     compiler = PythonCompiler()
+    
     try:
-        code = compiler.compile_source(source, script_path)
+        if mode == 'compile':
+            # Compile to .pyc
+            with open(target, 'r', encoding='utf-8') as f:
+                code = compiler.compile_source(f.read(), target)
+            pyc_path = compiler.generate_pyc(code, target)
+            print(f"[info] Successfully compiled to {pyc_path}")
         
-        if compile_only:
-            pyc_path = compiler.generate_pyc(code, script_path)
-            print(f"Successfully compiled to {pyc_path}")
+        elif mode == 'run_pyc':
+            # Run .pyc directly
+            code = compiler.load_pyc(target)
+            sys.argv = sys.argv[2:]  # Remove -r and pyc path
+            compiler.execute(code)
+        
         else:
+            # Normal execution
+            with open(target, 'r', encoding='utf-8') as f:
+                code = compiler.compile_source(f.read(), target)
+            sys.argv = sys.argv[1:]  # Remove script path
             compiler.execute(code)
             
     except CompilerError as e:
-        print(f"[error] Compilation error: {e}", file=sys.stderr)
+        print(f"[Error] Compiler: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"[error] Runtime error: {e}", file=sys.stderr)
+        print(f"[Error] Runtime: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':
     try:
         main()
     except MemoryError:
-        print("[error] Memory error: Operation requires too much memory", file=sys.stderr)
+        print("[Error] Out of memory", file=sys.stderr)
         sys.exit(1)
