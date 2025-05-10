@@ -1,11 +1,8 @@
-# miniPython
-mini Python Compiler/Interpreter with PYC generation
-
-## [中文](###简介)/[English](# Mini Python Compiler)
-
 # mini Python 编译器
 
-## 简介
+## [English](#mini-python-compiler)
+
+### 简介
 
 这是一个小型 Python 编译器 / 解释器，支持生成 PYC 文件。
 
@@ -28,19 +25,19 @@ mini Python Compiler/Interpreter with PYC generation
 
 ### FAQ
 
-  * **问：如何编译一个 Python 脚本为 PYC 文件？**
+  * **如何编译一个 Python 脚本为 PYC 文件？**
 
 答：使用命令 “python compiler.py -c script.py” 即可将 Python 脚本编译为 PYC 文件。
 
-  * **问：编译器支持哪些优化？**
+  * **编译器支持哪些优化？**
 
 答：目前支持常量折叠优化，后续会添加更多优化功能。
 
-  * **问：生成的 PYC 文件在哪里？**
+  * **生成的 PYC 文件在哪里？**
 
 答：默认在源文件所在目录下的 “__pycache__” 文件夹中，文件名为 “[源文件名].[Python 标签].pyc”。
 
-  * **问：如何查看编译器版本信息？**
+  * **如何查看编译器版本信息？**
 
 答：运行 “python compiler.py -v” 即可查看版本信息。
 
@@ -51,7 +48,6 @@ Apache-2.0 许可证。
 ### 致谢
 
 感谢你的使用与支持，如有问题可通过 tomma_2022@outlook.com 联系作者 Dinnerb0ne。
-
 
 # Mini Python Compiler
 
@@ -78,19 +74,19 @@ No extra installation is required; just run the code directly.
 
 ## FAQ
 
-  * **Q: How to compile a Python script to a PYC file?**
+  * **How to compile a Python script to a PYC file?**
 
 **A:** Use the command “python compiler.py -c script.py” to compile a Python script to a PYC file.
 
-  * **Q: What optimizations does the compiler support?**
+  * **What optimizations does the compiler support?**
 
 **A:** Currently, constant folding optimization is supported, and more optimizations will be added in the future.
 
-  * **Q: Where is the generated PYC file located?**
+  * **Where is the generated PYC file located?**
 
 **A:** By default, it is in the “__pycache__” folder under the source file directory, with the file name “[source filename].[Python tag].pyc”.
 
-  * **Q: How to view the compiler version information?**
+  * **How to view the compiler version information?**
 
 **A:** Run “python compiler.py -v” to view the version information.
 
