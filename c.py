@@ -160,12 +160,11 @@ def main():
             mode = 'run_pyc'
             target = sys.argv[2]
         case '-h':
-            if len(sys.argv) < 2:
-                print("[info] Usage:")
-                print("     |Execute script: python c.py script.py [args...]")
-                print("     |Compile to PYC: python c.py -c script.py")
-                print("     |Run PYC file:   python c.py -r script.pyc")
-                sys.exit(1)
+            print("[info] Usage:")
+            print("     |Execute script: python c.py script.py [args...]")
+            print("     |Compile to PYC: python c.py -c script.py")
+            print("     |Run PYC file:   python c.py -r script.pyc")
+            sys.exit(1)
 
         case '-v':
             print("mini Python Compiler v0.1.1")
